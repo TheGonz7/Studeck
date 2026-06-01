@@ -1,0 +1,121 @@
+import { useState } from 'react'
+import { supabase } from '../supabase'
+
+const AVATARS = ['🦉','🧠','🚀','📚','🎓','💡','⭐','🔥','🐝','🦊','🐢','🦁','🌟','✏️','🎯','🏆']
+
+export default function Perfil({ session, onBack, onUpdate, showToast }) {
+  const meta = session.user.user_metadata || {}
+  const [name, setName] = useState(meta.name || '')
+  const [avatar, setAvatar] = useState(meta.avatar || '🦉')
+  const [saving, setSaving] = useState(false)
+  const [changingPass, setChangingPass] = useState(false)
+  const [newPass, setNewPass] = useState('')
+
+  const email = session.user.email
+  const provider = session.user.app_metadata?.provider || 'email'
+
+  async function saveProfile() {
+    setSaving(true)
+    const { error } = await supabase.auth.updateUser({
+      data: { name: name.trim(), avatar }
+    })
+    if (error) showToast('❌ Error al guardar')
+    else { showToast('✅ Perfil actualizado'); onUpdate && onUpdate() }
+    setSaving(false)
+  }
+
+  async function changePassword() {
+    if (newPass.length < 6) { showToast('⚠️ Mínimo 6 caracteres'); return }
+    const { error } = await supabase.auth.updateUser({ password: newPass })
+    if (error) showToast('❌ ' + error.message)
+    else { showToast('✅ Contraseña cambiada'); setNewPass(''); setChangingPass(false) }
+  }
+
+  async function doLogout() {
+    if (!confirm('¿Cerrar sesión?')) return
+    await supabase.auth.signOut()
+  }
+
+  return (
+    <>
+      <div className="topbar">
+        <button className="icon-btn" onClick={onBack}>←</button>
+        <div className="topbar-title">Mi perfil</div>
+        <div style={{ width: 36 }} />
+      </div>
+
+      <div className="scroll">
+        {/* Avatar grande actual */}
+        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+          <div style={{
+            fontSize: '4rem', width: 110, height: 110, margin: '0 auto',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'var(--card)', border: '2px solid var(--accent)',
+            borderRadius: '50%'
+          }}>
+            {avatar}
+          </div>
+        </div>
+
+        {/* Selector de avatares */}
+        <div className="card">
+          <div className="card-title">Elige tu avatar</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 8 }}>
+            {AVATARS.map(a => (
+              <div key={a} onClick={() => setAvatar(a)}
+                style={{
+                  fontSize: '1.5rem', aspectRatio: '1', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  background: avatar === a ? 'var(--accent)' : 'var(--bg)',
+                  border: `1px solid ${avatar === a ? 'var(--accent)' : 'var(--border2)'}`,
+                  borderRadius: 10, cursor: 'pointer'
+                }}>
+                {a}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Datos */}
+        <div className="card">
+          <div className="card-title">Tus datos</div>
+          <label>Nombre</label>
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="Tu nombre" />
+          <label>Correo</label>
+          <input value={email} disabled style={{ opacity: 0.6 }} />
+          <label>Vinculado con</label>
+          <input value={provider === 'google' ? 'Google' : provider === 'apple' ? 'Apple' : 'Correo y contraseña'} disabled style={{ opacity: 0.6 }} />
+        </div>
+
+        <button className="btn btn-primary" onClick={saveProfile} disabled={saving}>
+          {saving ? 'Guardando...' : 'Guardar cambios →'}
+        </button>
+
+        {/* Cambiar contraseña — solo si es cuenta de correo */}
+        {provider === 'email' && (
+          <div className="card" style={{ marginTop: 12 }}>
+            <div className="card-title">Seguridad</div>
+            {!changingPass ? (
+              <button className="btn btn-secondary" onClick={() => setChangingPass(true)}>
+                🔒 Cambiar contraseña
+              </button>
+            ) : (
+              <>
+                <label>Nueva contraseña</label>
+                <input type="password" value={newPass} onChange={e => setNewPass(e.target.value)} placeholder="Mínimo 6 caracteres" />
+                <div className="btn-row">
+                  <button className="btn btn-primary" onClick={changePassword}>Guardar</button>
+                  <button className="btn btn-secondary" onClick={() => { setChangingPass(false); setNewPass('') }}>Cancelar</button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        <button className="btn btn-danger" style={{ marginTop: 12 }} onClick={doLogout}>
+          🚪 Cerrar sesión
+        </button>
+      </div>
+    </>
+  )
+}
