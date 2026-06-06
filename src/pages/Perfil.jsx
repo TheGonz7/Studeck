@@ -134,6 +134,13 @@ export default function Perfil({ session, onBack, onUpdate, showToast }) {
         <button className="btn btn-danger" style={{ marginTop: 12 }} onClick={doLogout}>
           {t('logout')}
         </button>
+
+        <div style={{ textAlign: 'center', marginTop: 20 }}>
+          <a href="/privacidad"
+            style={{ fontSize: '0.75rem', color: 'var(--text3)', textDecoration: 'underline' }}>
+            {t('privacyPolicy')}
+          </a>
+        </div>
       </div>
     </>
   )

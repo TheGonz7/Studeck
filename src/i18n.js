@@ -170,6 +170,7 @@ export const translations = {
     newRandomCards: '🎲 Nuevas tarjetas aleatorias',
     repeatSame: '↩ Repetir las mismas',
     backToHome: '🏠 Volver al inicio',
+    privacyPolicy: 'Política de privacidad',
 
     // Nav
     home: 'Inicio',
@@ -350,6 +351,7 @@ export const translations = {
     newRandomCards: '🎲 New random cards',
     repeatSame: '↩ Repeat same ones',
     backToHome: '🏠 Back to home',
+    privacyPolicy: 'Privacy policy',
 
     // Nav
     home: 'Home',
