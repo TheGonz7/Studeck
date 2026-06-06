@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import Login from './pages/Login'
 import Home from './pages/Home'
+import Privacidad from './pages/Privacidad'
 import './index.css'
 
 export default function App() {
@@ -9,19 +10,19 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [theme, setTheme] = useState(() => localStorage.getItem('fs_theme') || 'light')
 
+  // Detecta la ruta actual de la URL
+  const path = window.location.pathname
+
   useEffect(() => {
-    // Aplicar tema
     document.body.classList.toggle('light', theme === 'light')
     localStorage.setItem('fs_theme', theme)
   }, [theme])
 
   useEffect(() => {
-    // Verificar sesión activa
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setLoading(false)
     })
-    // Escuchar cambios de sesión
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
     })
@@ -29,6 +30,11 @@ export default function App() {
   }, [])
 
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
+
+  // Si la URL es /privacidad o /privacy, muestra la política (sin necesidad de login)
+  if (path === '/privacidad' || path === '/privacy') {
+    return <Privacidad onBack={() => { window.location.href = '/' }} />
+  }
 
   if (loading) return (
     <div style={{
