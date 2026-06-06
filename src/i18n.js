@@ -21,6 +21,7 @@ export const translations = {
     wrongCredentials: 'Email o contraseña incorrectos',
     checkEmail: '¡Revisa tu correo para confirmar tu cuenta!',
     pass6: 'La contraseña debe tener al menos 6 caracteres',
+    appleSoon: 'El inicio con Apple estará disponible próximamente.',
 
     // Home
     hello: 'Hola',
@@ -200,6 +201,7 @@ export const translations = {
     wrongCredentials: 'Wrong email or password',
     checkEmail: 'Check your email to confirm your account!',
     pass6: 'Password must be at least 6 characters',
+    appleSoon: 'Sign in with Apple will be available soon.',
 
     // Home
     hello: 'Hi',
