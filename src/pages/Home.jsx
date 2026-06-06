@@ -1,3 +1,4 @@
+import { useLang } from '../LangContext'
 import Perfil from './Perfil'
 import ReviewMateria from './ReviewMateria.jsx'
 import { useState, useEffect, useCallback } from 'react'
@@ -22,6 +23,7 @@ function ThemeSwitch({ theme, toggle }) {
 
 export default function Home({ session, theme, toggleTheme }) {
   const [tab, setTab] = useState('home')
+  const { t } = useLang()
   const [materias, setMaterias] = useState([])
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState('')
@@ -67,8 +69,8 @@ export default function Home({ session, theme, toggleTheme }) {
         <>
           <div className="topbar">
             <div>
-              <div className="topbar-title">Hola, {userName} 👋</div>
-              <div className="topbar-sub">¿Qué repasamos hoy?</div>
+              <div className="topbar-title">{t('hello')}, {userName} 👋</div>
+              <div className="topbar-sub">{t('whatToday')}</div>
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <ThemeSwitch theme={theme} toggle={toggleTheme} />
@@ -83,23 +85,23 @@ export default function Home({ session, theme, toggleTheme }) {
             <div className="stats-bar">
               <div className="stat">
                 <div className="stat-num">{active.length}</div>
-                <div className="stat-label">Materias</div>
+                <div className="stat-label">{t('subjects')}</div>
               </div>
               <div className="stat">
                 <div className="stat-num">{totalTarjetas}</div>
-                <div className="stat-label">Tarjetas</div>
+                <div className="stat-label">{t('cards')}</div>
               </div>
               <div className="stat">
                 <div className="stat-num">{totalRepasos}</div>
-                <div className="stat-label">Repasos</div>
+                <div className="stat-label">{t('reviews')}</div>
               </div>
             </div>
 
-            <div className="section-label">🔥 Estudiando ahora</div>
+            <div className="section-label">🔥 {t('studyingNow')}</div>
             {active.length === 0 ? (
               <div className="empty">
                 <div className="empty-icon">📚</div>
-                <p>Aún no tienes materias.<br />¡Crea tu primera para empezar!</p>
+                <p>{t('noSubjects')}<br />{t('createFirst')}</p>
               </div>
             ) : (
               active.map(m => (
@@ -109,7 +111,7 @@ export default function Home({ session, theme, toggleTheme }) {
 
             {crowned.length > 0 && (
               <>
-                <div className="section-label">👑 Mis coronas</div>
+                <div className="section-label">👑 {t('myCrowns')}</div>
                 {crowned.map(m => (
                   <MateriaCard key={m.id} materia={m} onClick={() => setTab('materia_' + m.id)} />
                 ))}
@@ -118,7 +120,7 @@ export default function Home({ session, theme, toggleTheme }) {
 
             <button className="btn btn-secondary" style={{ marginTop: 8 }}
               onClick={() => setTab('nueva_materia')}>
-              ➕ Nueva materia
+              ➕ {t('newSubject')}
             </button>
           </div>
         </>
@@ -185,15 +187,15 @@ export default function Home({ session, theme, toggleTheme }) {
       <nav className="navbar">
         <button className={`nav-item ${tab === 'home' ? 'active' : ''}`} onClick={() => setTab('home')}>
           <span className="nav-icon">🏠</span>
-          <span className="nav-label">Inicio</span>
+          <span className="nav-label">{t('home')}</span>
         </button>
         <button className={`nav-item ${tab === 'repasar' ? 'active' : ''}`} onClick={() => setTab('repasar')}>
           <span className="nav-icon">🎯</span>
-          <span className="nav-label">Repasar</span>
+          <span className="nav-label">{t('reviewNav')}</span>
         </button>
         <button className={`nav-item ${tab === 'logros' ? 'active' : ''}`} onClick={() => setTab('logros')}>
           <span className="nav-icon">🏆</span>
-          <span className="nav-label">Logros</span>
+          <span className="nav-label">{t('achievements')}</span>
         </button>
       </nav>
     </>
@@ -201,8 +203,10 @@ export default function Home({ session, theme, toggleTheme }) {
 }
 
 function MateriaCard({ materia: m, onClick }) {
+  const { t } = useLang()
   const count = m.tarjetas?.length || 0
   const badge = m.status === 'crown' ? '👑' : m.status === 'dominated' ? '⭐' : '🔥'
+  const cardWord = count === 1 ? t('card') : t('cardsPlural')
   return (
     <div className="materia-card" onClick={onClick}>
       <div className="materia-icon" style={{ background: m.color + '22', color: m.color }}>
@@ -210,7 +214,7 @@ function MateriaCard({ materia: m, onClick }) {
       </div>
       <div style={{ flex: 1 }}>
         <div className="materia-name">{m.name}</div>
-        <div className="materia-meta">{count} tarjeta{count !== 1 ? 's' : ''} · {m.last_review ? 'Repasada: ' + m.last_review : 'Sin repasos aún'}</div>
+        <div className="materia-meta">{count} {cardWord} · {m.last_review ? t('reviewed') + ': ' + m.last_review : t('noReviews')}</div>
       </div>
       <div style={{ fontSize: '1.2rem' }}>{badge}</div>
     </div>

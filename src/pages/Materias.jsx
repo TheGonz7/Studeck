@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { supabase } from '../supabase'
+import { useLang } from '../LangContext'
 
 const COLORS = ['#2563eb','#00d4aa','#f97316','#fbbf24','#ef4444','#00b4d8','#8b5cf6','#ec4899']
 
 export default function Materias({ materia, onBack, onSave, onDelete, showToast, onUpdate, session, onReview }) {
+  const { t } = useLang()
   const isNew = !materia
   const [view, setView] = useState(isNew ? 'form' : 'detail')
   const [name, setName] = useState(materia?.name || '')
@@ -14,9 +16,8 @@ export default function Materias({ materia, onBack, onSave, onDelete, showToast,
   const [filter, setFilter] = useState('all')
   const [celebration, setCelebration] = useState(null)
 
-  // ── FORM ──────────────────────────────────────────
   async function saveMateria() {
-    if (!name.trim()) { showToast('⚠️ El nombre es obligatorio'); return }
+    if (!name.trim()) { showToast(t('nameRequired')); return }
     setSaving(true)
     if (isNew) {
       const { error } = await supabase.from('materias').insert({
@@ -24,20 +25,20 @@ export default function Materias({ materia, onBack, onSave, onDelete, showToast,
         icon, color, user_id: session?.user?.id,
         status: 'active', repasos: 0, review_history: []
       })
-      if (error) showToast('❌ Error al guardar')
+      if (error) showToast(t('saveError'))
       else onSave()
     } else {
       const { error } = await supabase.from('materias')
         .update({ name: name.trim(), description: desc.trim(), icon, color })
         .eq('id', materia.id)
-      if (error) showToast('❌ Error al guardar')
+      if (error) showToast(t('saveError'))
       else { onSave(); setView('detail') }
     }
     setSaving(false)
   }
 
   async function deleteMateria() {
-    if (!confirm(`¿Eliminar "${materia.name}" y todas sus tarjetas?`)) return
+    if (!confirm(t('confirmDeleteSubject'))) return
     await supabase.from('materias').delete().eq('id', materia.id)
     onDelete()
   }
@@ -45,16 +46,16 @@ export default function Materias({ materia, onBack, onSave, onDelete, showToast,
   async function markDominated() {
     await supabase.from('materias').update({ status: 'dominated' }).eq('id', materia.id)
     onUpdate()
-    setCelebration({ icon: '⭐', title: '¡Mazo dominado!', sub: `"${materia.name}" está marcado como dominado.\n¡Cuando estés listo, declárate Rey!` })
+    setCelebration({ icon: '⭐', title: t('masteredDeck'), sub: `"${materia.name}"` })
   }
 
   async function crownMateria() {
-    if (!confirm(`¿Declararte Rey de "${materia.name}"?`)) return
-    const today = new Date().toLocaleDateString('es-ES')
+    if (!confirm(`${t('confirmKing')} "${materia.name}"?`)) return
+    const today = new Date().toLocaleDateString()
     await supabase.from('materias').update({ status: 'crown', crown_date: today }).eq('id', materia.id)
     onUpdate()
     spawnConfetti()
-    setCelebration({ icon: '👑', title: `¡Rey de ${materia.name}!`, sub: `Has dominado completamente este mazo.\nFecha: ${today}` })
+    setCelebration({ icon: '👑', title: `${t('kingOf')} ${materia.name}!`, sub: `${t('dominatedThis')}\n${t('date')}: ${today}` })
     setTimeout(() => { setCelebration(null); onBack() }, 4000)
   }
 
@@ -71,7 +72,6 @@ export default function Materias({ materia, onBack, onSave, onDelete, showToast,
     }
   }
 
-  // ── TARJETAS ──────────────────────────────────────
   const tarjetas = materia?.tarjetas || []
   const filtered = filter === 'all' ? tarjetas : tarjetas.filter(t => t.difficulty === filter)
   const reviewHistory = materia?.review_history || []
@@ -79,7 +79,6 @@ export default function Materias({ materia, onBack, onSave, onDelete, showToast,
   const showDomination = materia && materia.status === 'active' && last3.length >= 3 && last3.every(r => r >= 80)
   const showKing = materia?.status === 'dominated'
 
-  // ── NUEVA TARJETA STATE ───────────────────────────
   const [showTarjetaForm, setShowTarjetaForm] = useState(false)
   const [editTarjeta, setEditTarjeta] = useState(null)
 
@@ -88,19 +87,19 @@ export default function Materias({ materia, onBack, onSave, onDelete, showToast,
       <>
         <div className="topbar">
           <button className="icon-btn" onClick={onBack}>←</button>
-          <div className="topbar-title">{isNew ? 'Nueva materia' : 'Editar materia'}</div>
+          <div className="topbar-title">{isNew ? t('newSubjectTitle') : t('editSubject')}</div>
           <div style={{ width: 36 }} />
         </div>
         <div className="scroll">
           <div className="card">
-            <div className="card-title">Información</div>
-            <label>Nombre *</label>
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="ej: Inglés, Ingeniería Civil..." />
-            <label>Descripción (opcional)</label>
-            <input value={desc} onChange={e => setDesc(e.target.value)} placeholder="ej: Vocabulario para el IELTS" />
-            <label>Ícono (emoji)</label>
+            <div className="card-title">{t('info')}</div>
+            <label>{t('subjectName')} *</label>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder={t('subjectNamePlaceholder')} />
+            <label>{t('description')}</label>
+            <input value={desc} onChange={e => setDesc(e.target.value)} placeholder={t('descriptionPlaceholder')} />
+            <label>{t('icon')}</label>
             <input value={icon} onChange={e => setIcon(e.target.value)} placeholder="📚" maxLength={2} />
-            <label>Color</label>
+            <label>{t('color')}</label>
             <div className="color-row">
               {COLORS.map(c => (
                 <div key={c} className={`color-opt ${color === c ? 'selected' : ''}`}
@@ -109,11 +108,11 @@ export default function Materias({ materia, onBack, onSave, onDelete, showToast,
             </div>
           </div>
           <button className="btn btn-primary" onClick={saveMateria} disabled={saving}>
-            {saving ? 'Guardando...' : 'Guardar materia →'}
+            {saving ? t('saving') : t('saveSubject') + ' →'}
           </button>
           {!isNew && (
             <button className="btn btn-danger" style={{ marginTop: 8 }} onClick={deleteMateria}>
-              Eliminar materia
+              {t('deleteSubject')}
             </button>
           )}
         </div>
@@ -121,7 +120,6 @@ export default function Materias({ materia, onBack, onSave, onDelete, showToast,
     )
   }
 
-  // ── DETAIL VIEW ───────────────────────────────────
   if (showTarjetaForm || editTarjeta !== null) {
     return (
       <TarjetaForm
@@ -140,7 +138,7 @@ export default function Materias({ materia, onBack, onSave, onDelete, showToast,
           <div className="cel-icon">{celebration.icon}</div>
           <div className="cel-title">{celebration.title}</div>
           <div className="cel-sub">{celebration.sub}</div>
-          <button className="btn btn-gold" style={{ maxWidth: 280 }} onClick={() => setCelebration(null)}>¡Genial! 🎉</button>
+          <button className="btn btn-gold" style={{ maxWidth: 280 }} onClick={() => setCelebration(null)}>{t('great')}</button>
         </div>
       )}
 
@@ -148,7 +146,7 @@ export default function Materias({ materia, onBack, onSave, onDelete, showToast,
         <button className="icon-btn" onClick={onBack}>←</button>
         <div>
           <div className="topbar-title">{materia.icon} {materia.name}</div>
-          <div className="topbar-sub">{tarjetas.length} tarjeta{tarjetas.length !== 1 ? 's' : ''}</div>
+          <div className="topbar-sub">{tarjetas.length} {tarjetas.length === 1 ? t('card') : t('cardsPlural')}</div>
         </div>
         <button className="icon-btn" onClick={() => setView('form')}>✏️</button>
       </div>
@@ -156,30 +154,30 @@ export default function Materias({ materia, onBack, onSave, onDelete, showToast,
       <div className="scroll">
         {showDomination && (
           <div className="notice-box" style={{ marginBottom: 12 }}>
-            <div className="notice-title">⭐ ¡Lograste dominar este mazo!</div>
-            <div className="notice-text">Has completado 3 repasos con más del 80% de aciertos.</div>
+            <div className="notice-title">{t('dominatedTitle')}</div>
+            <div className="notice-text">{t('dominatedText')}</div>
             <div className="btn-row">
-              <button className="btn btn-gold btn-sm" onClick={markDominated}>Marcar como dominado ⭐</button>
-              <button className="btn btn-secondary btn-sm" onClick={() => {}}>Seguir repasando</button>
+              <button className="btn btn-gold btn-sm" onClick={markDominated}>{t('markDominated')}</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => {}}>{t('keepReviewing')}</button>
             </div>
           </div>
         )}
 
         {showKing && (
           <div style={{ marginBottom: 12 }}>
-            <button className="btn btn-gold" onClick={crownMateria}>👑 ¿Declararte Rey de este mazo?</button>
+            <button className="btn btn-gold" onClick={crownMateria}>{t('declareKing')}</button>
           </div>
         )}
 
         <button className="btn btn-primary" style={{ marginBottom: 12 }}
           onClick={() => onReview && onReview(materia)}>
-          ▶ Repasar esta materia
+          ▶ {t('reviewSubject')}
         </button>
 
         <div className="filter-row">
           {['all','easy','medium','hard'].map(f => (
             <div key={f} className={`filter-chip ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>
-              {f === 'all' ? 'Todas' : f === 'easy' ? '✅ Fácil' : f === 'medium' ? '⚡ Media' : '🔥 Difícil'}
+              {f === 'all' ? t('all') : f === 'easy' ? '✅ ' + t('easy') : f === 'medium' ? '⚡ ' + t('medium') : '🔥 ' + t('hard')}
             </div>
           ))}
         </div>
@@ -187,24 +185,24 @@ export default function Materias({ materia, onBack, onSave, onDelete, showToast,
         {filtered.length === 0 ? (
           <div className="empty">
             <div className="empty-icon">🃏</div>
-            <p>{tarjetas.length === 0 ? 'Aún no hay tarjetas.\n¡Agrega tu primera!' : 'No hay tarjetas con ese filtro.'}</p>
+            <p style={{ whiteSpace: 'pre-line' }}>{tarjetas.length === 0 ? t('noCards') : t('noCardsFilter')}</p>
           </div>
         ) : (
-          filtered.map(t => (
-            <div key={t.id} className="tarjeta-item">
+          filtered.map(tj => (
+            <div key={tj.id} className="tarjeta-item">
               <div className="ti-body">
                 <div className="ti-q">
-                  {t.pregunta}
-                  <span className={`diff-badge ${t.difficulty === 'easy' ? 'db-easy' : t.difficulty === 'medium' ? 'db-medium' : 'db-hard'}`}>
-                    {t.difficulty === 'easy' ? 'Fácil' : t.difficulty === 'medium' ? 'Media' : 'Difícil'}
+                  {tj.pregunta}
+                  <span className={`diff-badge ${tj.difficulty === 'easy' ? 'db-easy' : tj.difficulty === 'medium' ? 'db-medium' : 'db-hard'}`}>
+                    {tj.difficulty === 'easy' ? t('easy') : tj.difficulty === 'medium' ? t('medium') : t('hard')}
                   </span>
                 </div>
-                <div className="ti-a">{t.respuesta}</div>
-                {t.etiqueta && <span className="ti-tag">{t.etiqueta}</span>}
+                <div className="ti-a">{tj.respuesta}</div>
+                {tj.etiqueta && <span className="ti-tag">{tj.etiqueta}</span>}
               </div>
               <div className="ti-actions">
-                <button className="ti-btn" onClick={() => setEditTarjeta(t)}>✏️</button>
-                <button className="ti-btn del" onClick={() => deleteTarjetaById(t.id, onUpdate, showToast)}>🗑</button>
+                <button className="ti-btn" onClick={() => setEditTarjeta(tj)}>✏️</button>
+                <button className="ti-btn del" onClick={() => deleteTarjetaById(tj.id, onUpdate, showToast, t)}>🗑</button>
               </div>
             </div>
           ))
@@ -212,21 +210,22 @@ export default function Materias({ materia, onBack, onSave, onDelete, showToast,
 
         <button className="btn btn-secondary" style={{ marginTop: 4 }}
           onClick={() => setShowTarjetaForm(true)}>
-          ➕ Nueva tarjeta
+          ➕ {t('newCard')}
         </button>
       </div>
     </>
   )
 }
 
-async function deleteTarjetaById(id, onUpdate, showToast) {
-  if (!confirm('¿Eliminar esta tarjeta?')) return
+async function deleteTarjetaById(id, onUpdate, showToast, t) {
+  if (!confirm(t('confirmDeleteCard'))) return
   await supabase.from('tarjetas').delete().eq('id', id)
-  showToast('🗑️ Tarjeta eliminada')
+  showToast(t('cardDeleted'))
   onUpdate()
 }
 
 function TarjetaForm({ materia, tarjeta, onBack, showToast }) {
+  const { t } = useLang()
   const isNew = !tarjeta
   const [pregunta, setPregunta] = useState(tarjeta?.pregunta || '')
   const [respuesta, setRespuesta] = useState(tarjeta?.respuesta || '')
@@ -237,8 +236,8 @@ function TarjetaForm({ materia, tarjeta, onBack, showToast }) {
   const [saving, setSaving] = useState(false)
 
   async function save() {
-    if (!pregunta.trim() || !respuesta.trim()) { showToast('⚠️ Pregunta y respuesta son obligatorias'); return }
-    if (!diff) { showToast('⚠️ Selecciona una dificultad'); return }
+    if (!pregunta.trim() || !respuesta.trim()) { showToast(t('qaRequired')); return }
+    if (!diff) { showToast(t('selectDiff')); return }
     setSaving(true)
     const data = { pregunta: pregunta.trim(), respuesta: respuesta.trim(), pista, nota, etiqueta, difficulty: diff, materia_id: materia.id, user_id: materia.user_id }
     if (isNew) {
@@ -246,7 +245,7 @@ function TarjetaForm({ materia, tarjeta, onBack, showToast }) {
     } else {
       await supabase.from('tarjetas').update(data).eq('id', tarjeta.id)
     }
-    showToast('✅ Tarjeta guardada')
+    showToast(t('cardSaved'))
     setSaving(false)
     onBack()
   }
@@ -255,41 +254,41 @@ function TarjetaForm({ materia, tarjeta, onBack, showToast }) {
     <>
       <div className="topbar">
         <button className="icon-btn" onClick={onBack}>←</button>
-        <div className="topbar-title">{isNew ? 'Nueva tarjeta' : 'Editar tarjeta'}</div>
+        <div className="topbar-title">{isNew ? t('newCardTitle') : t('editCard')}</div>
         <div style={{ width: 36 }} />
       </div>
       <div className="scroll">
         <div className="card">
-          <div className="card-title">Contenido</div>
-          <label>Pregunta *</label>
-          <textarea value={pregunta} onChange={e => setPregunta(e.target.value)} placeholder="ej: ¿De qué está compuesto el hormigón?" />
-          <label>Respuesta *</label>
-          <textarea value={respuesta} onChange={e => setRespuesta(e.target.value)} placeholder="ej: 60% piedra, 30% arena, 10% cemento" />
-          <label>Pista (opcional)</label>
-          <input value={pista} onChange={e => setPista(e.target.value)} placeholder="ej: Son 3 elementos" />
-          <label>Nota adicional (opcional)</label>
-          <input value={nota} onChange={e => setNota(e.target.value)} placeholder="ej: Ver página 34" />
+          <div className="card-title">{t('content')}</div>
+          <label>{t('question')} *</label>
+          <textarea value={pregunta} onChange={e => setPregunta(e.target.value)} placeholder={t('questionPlaceholder')} />
+          <label>{t('answer')} *</label>
+          <textarea value={respuesta} onChange={e => setRespuesta(e.target.value)} placeholder={t('answerPlaceholder')} />
+          <label>{t('hint')}</label>
+          <input value={pista} onChange={e => setPista(e.target.value)} placeholder={t('hintPlaceholder')} />
+          <label>{t('note')}</label>
+          <input value={nota} onChange={e => setNota(e.target.value)} placeholder={t('notePlaceholder')} />
         </div>
         <div className="card">
-          <div className="card-title">Clasificación</div>
-          <label>Dificultad *</label>
+          <div className="card-title">{t('classification')}</div>
+          <label>{t('difficulty')} *</label>
           <div className="diff-selector">
             {['easy','medium','hard'].map(d => (
               <button key={d} className={`diff-btn ${diff === d ? `active-${d}` : ''}`} onClick={() => setDiff(d)}>
-                {d === 'easy' ? '✅ Fácil' : d === 'medium' ? '⚡ Media' : '🔥 Difícil'}
+                {d === 'easy' ? '✅ ' + t('easy') : d === 'medium' ? '⚡ ' + t('medium') : '🔥 ' + t('hard')}
               </button>
             ))}
           </div>
-          <label>Etiqueta / Unidad (opcional)</label>
-          <input value={etiqueta} onChange={e => setEtiqueta(e.target.value)} placeholder="ej: Unidad 2, Examen parcial" />
+          <label>{t('tag')}</label>
+          <input value={etiqueta} onChange={e => setEtiqueta(e.target.value)} placeholder={t('tagPlaceholder')} />
         </div>
         <button className="btn btn-primary" onClick={save} disabled={saving}>
-          {saving ? 'Guardando...' : 'Guardar tarjeta →'}
+          {saving ? t('saving') : t('saveCard') + ' →'}
         </button>
         {!isNew && (
           <button className="btn btn-danger" style={{ marginTop: 8 }}
-            onClick={() => deleteTarjetaById(tarjeta.id, onBack, showToast)}>
-            Eliminar tarjeta
+            onClick={() => deleteTarjetaById(tarjeta.id, onBack, showToast, t)}>
+            {t('deleteCard')}
           </button>
         )}
       </div>

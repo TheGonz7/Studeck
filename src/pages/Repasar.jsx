@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { supabase } from '../supabase'
+import { useLang } from '../LangContext'
 
 export default function Repasar({ materias, onBack, showToast, onUpdate }) {
+  const { t } = useLang()
   const [selected, setSelected] = useState(materias.map(m => m.id))
   const [modo, setModo] = useState('all')
   const [session, setSession] = useState(null)
@@ -12,17 +14,17 @@ export default function Repasar({ materias, onBack, showToast, onUpdate }) {
   }
 
   function startReview() {
-    if (selected.length === 0) { showToast('⚠️ Selecciona al menos una materia'); return }
+    if (selected.length === 0) { showToast(t('selectOneSubject')); return }
     let pool = []
     selected.forEach(id => {
       const m = materias.find(x => x.id === id)
       if (m) pool = pool.concat(m.tarjetas || [])
     })
-    if (modo === 'hard') pool = pool.filter(t => t.difficulty === 'hard')
-    if (pool.length === 0) { showToast('⚠️ No hay tarjetas con ese filtro'); return }
+    if (modo === 'hard') pool = pool.filter(tj => tj.difficulty === 'hard')
+    if (pool.length === 0) { showToast(t('noCardsFilterReview')); return }
     const fullPool = [...pool]
     const shuffled = pool.sort(() => Math.random() - .5).slice(0, 20)
-    setSession({ cards: shuffled, fullPool, index: 0, results: [], yes: 0, partial: 0, no: 0, title: 'Repaso general' })
+    setSession({ cards: shuffled, fullPool, index: 0, results: [], yes: 0, partial: 0, no: 0, title: t('generalReview') })
     setResult(null)
   }
 
@@ -32,8 +34,8 @@ export default function Repasar({ materias, onBack, showToast, onUpdate }) {
       onHome={onBack}
       onRetry={() => {
         const failed = session.cards.filter((_, i) => session.results[i] !== 'yes')
-        if (failed.length === 0) { showToast('⚠️ No hay tarjetas fallidas'); return }
-        setSession({ ...session, cards: failed, index: 0, results: [], yes: 0, partial: 0, no: 0, title: 'Tarjetas fallidas' })
+        if (failed.length === 0) { showToast(t('noFailedCards')); return }
+        setSession({ ...session, cards: failed, index: 0, results: [], yes: 0, partial: 0, no: 0, title: t('failedCardsTitle') })
         setResult(null)
       }}
       onReplaySame={() => {
@@ -73,14 +75,14 @@ export default function Repasar({ materias, onBack, showToast, onUpdate }) {
   return (
     <>
       <div className="topbar">
-        <div className="topbar-title">Repasar</div>
+        <div className="topbar-title">{t('reviewNav')}</div>
       </div>
       <div className="scroll">
-        <div className="section-label">Elige materias</div>
+        <div className="section-label">{t('chooseSubjects')}</div>
         {materias.length === 0 ? (
           <div className="empty">
             <div className="empty-icon">📚</div>
-            <p>No tienes materias activas.</p>
+            <p>{t('noActiveSubjects')}</p>
           </div>
         ) : (
           materias.map(m => (
@@ -91,7 +93,7 @@ export default function Repasar({ materias, onBack, showToast, onUpdate }) {
               </div>
               <div style={{ flex: 1 }}>
                 <div className="materia-name">{m.name}</div>
-                <div className="materia-meta">{(m.tarjetas || []).length} tarjetas</div>
+                <div className="materia-meta">{(m.tarjetas || []).length} {t('cardsPlural')}</div>
               </div>
               <div style={{ fontSize: '1.2rem' }}>{selected.includes(m.id) ? '✅' : '⬜'}</div>
             </div>
@@ -99,10 +101,10 @@ export default function Repasar({ materias, onBack, showToast, onUpdate }) {
         )}
 
         <div className="card" style={{ marginTop: 8 }}>
-          <div className="card-title">Modo</div>
+          <div className="card-title">{t('mode')}</div>
           {[
-            { id: 'all', label: '🔀 Todo mezclado', sub: 'Todas las tarjetas seleccionadas' },
-            { id: 'hard', label: '🔥 Solo difíciles', sub: 'Tarjetas marcadas como difíciles' }
+            { id: 'all', label: t('allMixed'), sub: t('allMixedSub') },
+            { id: 'hard', label: t('hardOnlyMode'), sub: t('hardOnlyModeSub') }
           ].map(opt => (
             <div key={opt.id}
               className="materia-card"
@@ -118,7 +120,7 @@ export default function Repasar({ materias, onBack, showToast, onUpdate }) {
         </div>
 
         <button className="btn btn-primary" style={{ marginTop: 8 }} onClick={startReview}>
-          ▶ Comenzar
+          {t('start')}
         </button>
       </div>
     </>
@@ -126,6 +128,7 @@ export default function Repasar({ materias, onBack, showToast, onUpdate }) {
 }
 
 function ReviewSession({ session, onEval, onExit }) {
+  const { t } = useLang()
   const [revealed, setRevealed] = useState(false)
   const [hintShown, setHintShown] = useState(false)
   const card = session.cards[session.index]
@@ -138,7 +141,7 @@ function ReviewSession({ session, onEval, onExit }) {
   return (
     <>
       <div className="topbar">
-        <button className="icon-btn" onClick={() => { if (confirm('¿Salir del repaso?')) onExit() }}>✕</button>
+        <button className="icon-btn" onClick={() => { if (confirm(t('exitReview'))) onExit() }}>✕</button>
         <div className="topbar-title">{session.title}</div>
         <div style={{ width: 36 }} />
       </div>
@@ -151,7 +154,7 @@ function ReviewSession({ session, onEval, onExit }) {
         </div>
 
         <div className="flashcard">
-          <div className="fc-hint">¿Cuál es la respuesta?</div>
+          <div className="fc-hint">{t('whatsAnswer')}</div>
           <div className="fc-word">{card.pregunta}</div>
           {hintShown && card.pista && (
             <div style={{ fontSize: '0.8rem', color: 'var(--text3)', marginTop: 8 }}>💡 {card.pista}</div>
@@ -164,28 +167,28 @@ function ReviewSession({ session, onEval, onExit }) {
             {card.pista && !hintShown && (
               <div style={{ textAlign: 'center', marginBottom: 10 }}>
                 <button className="btn btn-secondary btn-sm" style={{ width: 'auto' }}
-                  onClick={() => setHintShown(true)}>💡 Ver pista</button>
+                  onClick={() => setHintShown(true)}>{t('showHint')}</button>
               </div>
             )}
-            <button className="btn btn-primary" onClick={handleReveal}>Revelar respuesta</button>
+            <button className="btn btn-primary" onClick={handleReveal}>{t('revealAnswer')}</button>
           </>
         ) : (
           <>
             <p style={{ textAlign: 'center', fontSize: '0.72rem', color: 'var(--text3)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>
-              ¿Cómo te fue?
+              {t('howDidYouDo')}
             </p>
             <div className="eval-row">
               <button className="eval-btn" onClick={() => handleEval('yes')}>
                 <span className="eval-icon">✅</span>
-                <span className="eval-label">Lo sabía</span>
+                <span className="eval-label">{t('knewIt')}</span>
               </button>
               <button className="eval-btn" onClick={() => handleEval('partial')}>
                 <span className="eval-icon">😐</span>
-                <span className="eval-label">A medias</span>
+                <span className="eval-label">{t('soSo')}</span>
               </button>
               <button className="eval-btn" onClick={() => handleEval('no')}>
                 <span className="eval-icon">❌</span>
-                <span className="eval-label">No lo sabía</span>
+                <span className="eval-label">{t('didntKnow')}</span>
               </button>
             </div>
           </>
@@ -196,43 +199,44 @@ function ReviewSession({ session, onEval, onExit }) {
 }
 
 function ReviewResult({ result, onHome, onRetry, onReplaySame, onReplayNew }) {
+  const { t } = useLang()
   const pct = Math.round((result.yes / result.total) * 100)
   return (
     <>
       <div className="topbar">
-        <div className="topbar-title">Resultado</div>
+        <div className="topbar-title">{t('result')}</div>
       </div>
       <div className="scroll">
         <div className="big-stat">
           <div className="big-num">{pct}%</div>
-          <div className="big-label">de aciertos</div>
+          <div className="big-label">{t('accuracy')}</div>
         </div>
         <div className="stats-bar">
           <div className="stat">
             <div className="stat-num" style={{ color: 'var(--success)' }}>{result.yes}</div>
-            <div className="stat-label">Correctas</div>
+            <div className="stat-label">{t('correct')}</div>
           </div>
           <div className="stat">
             <div className="stat-num" style={{ color: 'var(--gold)' }}>{result.partial}</div>
-            <div className="stat-label">A medias</div>
+            <div className="stat-label">{t('partial')}</div>
           </div>
           <div className="stat">
             <div className="stat-num" style={{ color: 'var(--danger)' }}>{result.no}</div>
-            <div className="stat-label">Incorrectas</div>
+            <div className="stat-label">{t('incorrect')}</div>
           </div>
         </div>
         {result.no > 0 && (
           <button className="btn btn-danger" style={{ marginBottom: 8 }} onClick={onRetry}>
-            🔄 Repasar solo las fallidas
+            {t('reviewFailedOnly')}
           </button>
         )}
         <button className="btn btn-primary" style={{ marginBottom: 8 }} onClick={onReplayNew}>
-          🎲 Nuevas tarjetas aleatorias
+          {t('newRandomCards')}
         </button>
         <button className="btn btn-secondary" style={{ marginBottom: 8 }} onClick={onReplaySame}>
-          ↩ Repetir las mismas
+          {t('repeatSame')}
         </button>
-        <button className="btn btn-secondary" onClick={onHome}>🏠 Volver al inicio</button>
+        <button className="btn btn-secondary" onClick={onHome}>{t('backToHome')}</button>
       </div>
     </>
   )
