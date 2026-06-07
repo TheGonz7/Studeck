@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "app.studeck.twa",
+    "sha256_cert_fingerprints": ["42:C1:2F:D3:8C:02:23:A4:85:48:C1:0D:BC:69:E1:0F:97:AC:19:63:0F:31:21:15:4B:DE:FA:7B:DE:62:EC:98"]
+  }
+}]
